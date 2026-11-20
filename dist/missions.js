@@ -26,6 +26,7 @@ const memory = (pairs, explanation) => scenario('memory', 'Associe chaque exempl
 const link = (prompt, pairs, explanation) => scenario('link', prompt, { pairs }, explanation);
 const repair = (prompt, target, explanation) => scenario('repair', prompt, { target, parts: fanParts }, explanation);
 export const captions = {
+  'electric-bicycle': 'Vélo à assistance électrique',
   sun: 'Soleil', fire: 'Feu de bois', bike: 'Cycliste', motor: 'Moteur électrique',
   dam: 'Barrage', battery: 'Piles', nuclear: 'Centrale nucléaire', wind: 'Éoliennes',
   wind_source: 'Parc éolien', oil_source: 'Pompes à pétrole', water_source: 'Eau en mouvement',
@@ -180,3 +181,40 @@ export const missions = [
     ],
   },
 ];
+
+const fourthGradeRounds = {
+  'sources-photo': identify('wind_source', 'Deux installations produisent de l’électricité : une éolienne et un barrage. Quelle est la source de l’éolienne ?', 'Le vent', ['L’électricité', 'La rotation des pales'], 'La source est le vent. La rotation des pales est un mouvement et l’électricité est l’énergie utile obtenue.'),
+  'sources-tri': renewable('Classe ces ressources. La façon dont on les exploite change-t-elle leur renouvellement ?', [
+    ['fire', 'Le bois d’une forêt qui repousse au rythme des coupes', 0],
+    ['oil_source', 'Le pétrole utilisé pour produire de la chaleur', 1],
+    ['dam', 'L’eau d’un barrage dont le débit varie', 0],
+    ['nuclear', 'L’uranium utilisé pour produire de l’électricité', 1],
+  ], 'Le classement dépend du renouvellement de la ressource. Le débit de l’eau peut varier et le pétrole s’épuise quel que soit son usage.'),
+  'sources-diagnostic': files('Écarte les deux conclusions qui confondent source et forme.', [
+    ['wind_source', 'L’électricité fait partie des sources renouvelables.', false],
+    ['sun', 'Le Soleil est une source, sa lumière est une forme d’énergie.', true],
+    ['dam', 'La rotation de la turbine est une source naturelle.', false],
+    ['oil_source', 'Le pétrole est une source et la chaleur dégagée en brûlant correspond à une forme.', true],
+  ], 'Une source indique l’origine. L’électricité, la rotation et la chaleur indiquent des formes sous lesquelles l’énergie se manifeste.'),
+  formes: memory([
+    ['battery', 'Une batterie chargée, avant utilisation', 'Énergie chimique'],
+    ['motor', 'L’axe du moteur tourne', 'Énergie cinétique'],
+    ['dam', 'L’eau est immobile en hauteur', 'Énergie potentielle de pesanteur'],
+  ], 'Une réserve d’énergie peut exister sans mouvement. La batterie la stocke sous forme chimique et l’eau en hauteur possède de l’énergie potentielle de pesanteur.'),
+  'photo-match': link('Dans chaque situation, repère le changement de forme principal.', [
+    ['motor', 'Un moteur électrique se met à tourner', 'Électrique → cinétique'],
+    ['fire', 'Du bois brûle pour réchauffer une pièce', 'Chimique → thermique'],
+    ['dam', 'L’eau retenue en hauteur commence à descendre', 'Potentielle de pesanteur → cinétique'],
+  ], 'Il faut repérer la forme de départ et la forme utile obtenue dans la situation décrite.'),
+  conversions: identify('motor', 'Le moteur tourne et son boîtier chauffe. Pour faire avancer le vélo, quelle forme d’énergie est utile ?', 'L’énergie cinétique liée à la rotation', ['L’énergie thermique du boîtier', 'L’énergie lumineuse'], 'La rotation est recherchée pour faire avancer le vélo. L’échauffement est une autre manifestation, qui ne sert pas ici à le faire avancer.'),
+  'chaine-ordre': ordering('Suis le parcours de l’assistance électrique du vélo.', ['Batterie', 'Contrôleur', 'Moteur au pédalier', 'Chaîne et pignons'], 'La batterie fournit l’énergie électrique. Le contrôleur règle le courant. Le moteur crée la rotation que la chaîne et les pignons transmettent à la roue.'),
+  'chaine-pieces': board('Associe chaque constituant du vélo à sa fonction.', fanRoles,
+    ['Batterie', 'Contrôleur', 'Moteur au pédalier', 'Chaîne et pignons'].map((label, target) => ({ label, target })),
+    'Les quatre fonctions restent les mêmes quand on passe du ventilateur au vélo. Les constituants qui les réalisent changent.', true),
+  'chaine-panne': identify('electric-bicycle', 'Sur le vélo, le moteur tourne, mais la chaîne est sortie de son pignon. Quelle fonction est interrompue ?', 'Transmettre', ['Alimenter', 'Distribuer', 'Convertir'], 'La rotation existe déjà. La chaîne sortie de son pignon ne la transmet plus à la roue arrière.'),
+  'defi-final': identify('motor', 'Quelle observation permet de dire que le moteur convertit l’énergie ?', 'Il reçoit de l’énergie électrique et produit une rotation.', ['La chaîne transmet une rotation à la roue.', 'La batterie fournit le courant.'], 'Le moteur change la forme de l’énergie. Transmettre une rotation d’une pièce à une autre ne change pas sa forme.'),
+};
+
+export const fourthGradeMissions = missions.map(mission => ({
+  ...mission, rounds: [...mission.rounds, fourthGradeRounds[mission.id]],
+}));

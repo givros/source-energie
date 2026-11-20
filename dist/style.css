@@ -395,3 +395,6 @@ body:has(.game), body:has(.credits) { min-height: 100vh; }
 }
 .exam-word-bank p { display: flex; gap: 4px 10px; flex-wrap: wrap; margin: 0; }
 .exam-word-bank p + p { margin-top: 4px; }
+.course-bike { display: grid; grid-template-columns: 190px 1fr; gap: 16px; align-items: start; }
+.course-bike img { display: block; width: 100%; border-radius: 3px; }
+.course-bike .memo-table { margin-top: 0; }

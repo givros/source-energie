@@ -1,6 +1,5 @@
 import { getSubject, subjectCount } from './assessment-bank.js';
 
-const historyKey = 'mission-energie-exam-subjects-v1';
 const subjectNumbers = Array.from({ length: subjectCount }, (_, index) => index + 1);
 
 const weightOf = question => question.weight ?? 1;
@@ -20,11 +19,12 @@ const formatPoints = number => new Intl.NumberFormat('fr-FR').format(number);
 const escapeHtml = value => String(value).replace(/[&<>"']/g, character =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 
-export function createAssessment(root, shuffle) {
+export function createAssessment(root, shuffle, grade = '5e') {
+  const historyKey = grade === '4e' ? 'mission-energie-4e-exam-subjects-v1' : 'mission-energie-exam-subjects-v1';
   let attempt;
   let history = [];
   let selection;
-  const maxScore = pointsFor(getSubject(1).flatMap(section => section.items));
+  const maxScore = pointsFor(getSubject(1, grade).flatMap(section => section.items));
   const subjectLabel = number => String(number).padStart(3, '0');
   let view = 'intro';
 
@@ -65,7 +65,7 @@ export function createAssessment(root, shuffle) {
   function start() {
     selection = null;
     const number = drawSubject();
-    const sections = getSubject(number);
+    const sections = getSubject(number, grade);
     const items = sections.flatMap(section => section.items);
     const chain = sections.find(section => section.chain);
     const written = sections.flatMap(section => section.items).filter(question => question.suggestions);
@@ -80,9 +80,9 @@ export function createAssessment(root, shuffle) {
   }
 
   function introMarkup() {
-    const sections = getSubject(1);
+    const sections = getSubject(1, grade);
     return `<section class="exam-intro">
-      <div><span class="eyebrow">Entraînement individuel · 5e</span>
+      <div><span class="eyebrow">Entraînement individuel · ${grade}</span>
       <h1 tabindex="-1">Contrôle blanc</h1>
       <p>Un sujet est tiré au sort parmi ${subjectCount} au démarrage. Il porte sur les sources, les formes et la chaîne d’énergie d’un vélo à assistance électrique.</p>
       <ul class="exam-scale">${sections.map(section => `<li><span>${section.title}</span><strong>${pointsFor(section.items)} pts</strong></li>`).join('')}</ul>

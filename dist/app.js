@@ -1,20 +1,30 @@
-import { missions } from './missions.js';
+import { missions as fifthGradeMissions, fourthGradeMissions } from './missions.js';
 import { createAssessment } from './assessment.js';
 import { modeLabels, createMechanic, renderMechanic, handleMechanic, markMechanicResult, mechanicSolution } from './mechanics.js';
 
 const app = document.querySelector('#app');
 const progressLabel = document.querySelector('#top-progress');
-const storageKey = 'mission-energie-5e-v4';
+const isFourthGrade = new URLSearchParams(location.search).get('niveau') === '4e';
+const grade = isFourthGrade ? '4e' : '5e';
+const missions = isFourthGrade ? fourthGradeMissions : fifthGradeMissions;
+const storageKey = `mission-energie-${grade}-v4`;
+const gradeLink = document.querySelector('.grade-link');
+gradeLink.href = isFourthGrade ? './' : '?niveau=4e';
+gradeLink.textContent = isFourthGrade ? 'Version 5e' : 'Version 4e';
+if (isFourthGrade) {
+  document.title = 'Mission Énergie · Technologie 4e';
+  document.querySelector('.brand').href = '#cours';
+}
 const retainedMissions = new Set(['sources-tri', 'chaine-ordre', 'chaine-pieces']);
 const scores = readScores();
 let run;
-const assessment = createAssessment(app, shuffled);
+const assessment = createAssessment(app, shuffled, grade);
 let selectedMission = missions[0];
 
 function readScores() {
   try {
     const current = localStorage.getItem(storageKey);
-    const saved = JSON.parse(current ?? localStorage.getItem('mission-energie-5e-v3'));
+    const saved = JSON.parse(current ?? (isFourthGrade ? null : localStorage.getItem('mission-energie-5e-v3')));
     return Object.fromEntries(missions.flatMap(({ id, rounds }) =>
       (current !== null || retainedMissions.has(id)) && Number.isInteger(saved?.[id]) && saved[id] >= 0 && saved[id] <= rounds.length ? [[id, saved[id]]] : []
     ));
@@ -74,7 +84,7 @@ function showHome(jumpToMissions) {
   app.innerHTML = `<section class="control-room" id="missions" aria-labelledby="mission-title">
     <div class="room-console">
       <div class="room-heading">
-        <div class="eyebrow">Technologie 5e · Séquence 02</div>
+        <div class="eyebrow">Technologie ${grade}${isFourthGrade ? "" : " · Séquence 02"}</div>
         <h1 id="mission-title" tabindex="-1">Poste de contrôle</h1>
       </div>
       <div class="console-grid">
@@ -96,10 +106,10 @@ function selectMission(button) {
   app.querySelector('.brief').innerHTML = missionBrief(selectedMission);
 }
 
-function memoContent(dialog = false) {
+function memoContent(dialog = false, course = false) {
   return `<section class="credits course-memo">
-    ${dialog ? '<form method="dialog"><button type="submit" class="secondary">Reprendre la mission</button></form>' : '<a class="back" href="#missions">← Poste de contrôle</a>'}
-    <h1 id="memo-title" tabindex="-1">Mémo du cours</h1>
+    ${dialog ? '<form method="dialog"><button type="submit" class="secondary">Reprendre la mission</button></form>' : course ? '' : '<a class="back" href="#missions">← Poste de contrôle</a>'}
+    <h1 id="memo-title" tabindex="-1">${course ? 'Cours · Sources, formes et chaîne d’énergie' : 'Mémo du cours'}</h1>
     <section>
       <h2>1. Les sources d’énergie</h2>
       <p>Une source indique d’où vient l’énergie.</p>
@@ -129,6 +139,21 @@ function memoContent(dialog = false) {
         <dt>Transmettre · l’axe</dt><dd>Transmettre la rotation à l’hélice, qui met l’air en mouvement.</dd>
       </dl>
     </section>
+    ${isFourthGrade ? `<section>
+      <h2>4. Suivre une conversion d’énergie</h2>
+      <p>Pour décrire une conversion, repère la forme reçue et la forme utile obtenue. Le moteur d’un vélo électrique reçoit de l’énergie électrique et produit une rotation. Le moteur chauffe aussi, mais cette chaleur ne sert pas à faire avancer le vélo.</p>
+      <h3>Application au vélo à assistance électrique</h3>
+      <div class="course-bike">
+        <img src="photos/electric-bicycle.jpg" alt="Vélo à assistance électrique avec moteur au pédalier">
+        <dl class="memo-table">
+          <dt>Alimenter</dt><dd>La batterie fournit l’énergie électrique.</dd>
+          <dt>Distribuer</dt><dd>Le contrôleur règle le passage du courant vers le moteur.</dd>
+          <dt>Convertir</dt><dd>Le moteur transforme l’énergie électrique en rotation.</dd>
+          <dt>Transmettre</dt><dd>La chaîne et les pignons transmettent la rotation à la roue arrière.</dd>
+        </dl>
+      </div>
+    </section>` : ''}
+    ${course ? '<a class="primary" href="#missions">Passer aux exercices</a>' : ''}
   </section>`;
 }
 
@@ -306,6 +331,10 @@ function route() {
     start(mission);
   } else if (hash === '#memo') {
     showMemo();
+  } else if (isFourthGrade && (!hash || hash === '#cours')) {
+    app.innerHTML = memoContent(false, true);
+    window.scrollTo(0, 0);
+    app.querySelector('h1').focus({ preventScroll: true });
   } else if (hash === '#credits') {
     showCredits();
   } else {

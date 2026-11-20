@@ -177,12 +177,17 @@ function sourceItems(index) {
 
 export const subjectCount = 100;
 
-export function getSubject(number) {
+export function getSubject(number, grade = '5e') {
   if (!Number.isInteger(number) || number < 1 || number > subjectCount) throw new RangeError('Numéro de sujet hors limites.');
   const sourceIndex = Math.floor((number - 1) / 10);
   const formIndex = (number - 1) % 10;
+  const sources = sourceItems(sourceIndex);
+  if (grade === '4e') {
+    const [prompt, answer, alternatives, explanation] = sourceReasoning[(sourceIndex + 4) % sourceReasoning.length];
+    sources[2] = item(prompt, answer, explanation, [answer, ...alternatives]);
+  }
   return [
-    { title: 'Les sources d’énergie', photo: 'dam', alt: 'Barrage Hoover', items: sourceItems(sourceIndex) },
+    { title: 'Les sources d’énergie', photo: 'dam', alt: 'Barrage Hoover', items: sources },
     { title: 'Les formes d’énergie', photo: 'fire', alt: 'Feu de bois', items: [0, 1, 3, 4, 6, 2, 5].map(i => {
       const name = formNames[i];
       const situation = formScenarios[i][(formIndex + 3 * i) % 10];
