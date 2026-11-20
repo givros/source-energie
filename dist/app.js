@@ -1,4 +1,5 @@
 import { missions as fifthGradeMissions, fourthGradeMissions } from './missions.js';
+import { createCourse } from './course.js';
 import { createAssessment } from './assessment.js';
 import { modeLabels, createMechanic, renderMechanic, handleMechanic, markMechanicResult, mechanicSolution } from './mechanics.js';
 
@@ -19,6 +20,7 @@ const retainedMissions = new Set(['sources-tri', 'chaine-ordre', 'chaine-pieces'
 const scores = readScores();
 let run;
 const assessment = createAssessment(app, shuffled, grade);
+const course = isFourthGrade ? createCourse(app) : null;
 let selectedMission = missions[0];
 
 function readScores() {
@@ -106,10 +108,10 @@ function selectMission(button) {
   app.querySelector('.brief').innerHTML = missionBrief(selectedMission);
 }
 
-function memoContent(dialog = false, course = false) {
+function memoContent(dialog = false) {
   return `<section class="credits course-memo">
-    ${dialog ? '<form method="dialog"><button type="submit" class="secondary">Reprendre la mission</button></form>' : course ? '' : '<a class="back" href="#missions">← Poste de contrôle</a>'}
-    <h1 id="memo-title" tabindex="-1">${course ? 'Cours · Sources, formes et chaîne d’énergie' : 'Mémo du cours'}</h1>
+    ${dialog ? '<form method="dialog"><button type="submit" class="secondary">Reprendre la mission</button></form>' : '<a class="back" href="#missions">← Poste de contrôle</a>'}
+    <h1 id="memo-title" tabindex="-1">Mémo du cours</h1>
     <section>
       <h2>1. Les sources d’énergie</h2>
       <p>Une source indique d’où vient l’énergie.</p>
@@ -153,7 +155,6 @@ function memoContent(dialog = false, course = false) {
         </dl>
       </div>
     </section>` : ''}
-    ${course ? '<a class="primary" href="#missions">Passer aux exercices</a>' : ''}
   </section>`;
 }
 
@@ -332,9 +333,8 @@ function route() {
   } else if (hash === '#memo') {
     showMemo();
   } else if (isFourthGrade && (!hash || hash === '#cours')) {
-    app.innerHTML = memoContent(false, true);
     window.scrollTo(0, 0);
-    app.querySelector('h1').focus({ preventScroll: true });
+    course.render();
   } else if (hash === '#credits') {
     showCredits();
   } else {
