@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Notes de l’épreuve · 5e</title>
+  <link rel="stylesheet" href="notes.css">
+  <script type="module" src="notes.js"></script>
+</head>
+<body>
+  <main>
+    <a href="../">Mission Énergie</a>
+    <h1>Notes de l’épreuve de 5e</h1>
+    <form id="access">
+      <label for="code">Code professeur</label>
+      <input id="code" type="password" required autocomplete="off" maxlength="43">
+      <button type="submit">Afficher les notes</button>
+    </form>
+    <p id="status" role="status"></p>
+    <section id="results" hidden>
+      <div class="toolbar">
+        <label for="class-filter">Classe</label>
+        <select id="class-filter"></select>
+        <button type="button" id="refresh">Actualiser</button>
+        <button type="button" id="lock">Fermer l’accès</button>
+      </div>
+      <div id="class-list"></div>
+    </section>
+  </main>
+</body>
+</html>
