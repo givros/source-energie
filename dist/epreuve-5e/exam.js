@@ -1,3 +1,36 @@
+const main = document.querySelector('#app');
+document.body.classList.add('official-exam');
+document.title = 'Épreuve de technologie · Énergie · 5e';
+document.head.insertAdjacentHTML('beforeend', '<meta name="robots" content="noindex"><link rel="stylesheet" href="epreuve-5e/exam.css">');
+document.querySelectorAll('.top-progress, .top a:not(.brand):not(.official-link)').forEach(element => { element.hidden = true; });
+document.querySelector('.brand').href = './';
+document.querySelector('.official-link').setAttribute('aria-current', 'page');
+main.innerHTML = `  <section id="welcome">
+    <h1>Épreuve de technologie · 5e</h1>
+    <p>Sources, formes et chaîne d’énergie · 20 minutes · /20</p>
+    <p class="competency">Identifier des constituants de la chaîne d’énergie d’un objet technique (l’organisation de la chaîne d’énergie étant fournie)</p>
+    <p>Le chronomètre démarre lorsque tu cliques sur <strong>Démarrer</strong>. Tu peux soumettre ta copie avant la fin. À 00:00, les réponses enregistrées sont remises automatiquement.</p>
+    <form id="identity">
+      <label>Nom <input name="lastName" maxlength="80" autocomplete="family-name" required></label>
+      <label>Prénom <input name="firstName" maxlength="80" autocomplete="given-name" required></label>
+      <label>Classe <input name="className" maxlength="30" autocomplete="off" required></label>
+      <button type="submit">Démarrer</button>
+    </form>
+  </section>
+  <p id="notice" role="status" aria-live="polite"></p>
+  <section id="exam" hidden>
+    <header class="official-clock"><strong>Épreuve de technologie · 5e</strong><span id="clock" role="timer">20:00</span></header>
+    <form id="work">
+      <div id="questions"></div>
+      <button type="submit">Soumettre ma copie</button>
+    </form>
+  </section>
+  <section id="received" hidden>
+    <h1>Copie remise</h1>
+    <p>Ta copie et ta note ont été enregistrées.</p>
+  </section>
+`;
+
 const endpoint = 'https://yswswuxtdjpewrqzrrnu.supabase.co/functions/v1/energy-exam-5e';
 const sessionKey = 'mission-energie-official-5e-session';
 const $ = selector => document.querySelector(selector);
@@ -96,7 +129,7 @@ function render(paper) {
     const points = section.items.reduce((sum, question) => sum + question.points,0);
     let body;
     if (section.chain) {
-      body = `<img src="../photos/electric-bicycle.jpg" width="200" alt="Vélo à assistance électrique">
+      body = `<img src="photos/electric-bicycle.jpg" width="200" alt="Vélo à assistance électrique">
         <div class="word-help">${section.banks.map(([label,words]) => `<div><strong>${escape(label)}</strong> · ${words.map(escape).join(' · ')}</div>`).join('')}</div>
         <div class="chain">${Array.from({length:4},(_,i) => `<fieldset><legend>Étape ${i+1}${i<3 ? ' →' : ''}</legend>${section.items.slice(i*3,i*3+3).map((q,j) => input(q,start+i*3+j,q.prompt)).join('')}</fieldset>`).join('')}</div>`;
     } else if (section.labels) {
