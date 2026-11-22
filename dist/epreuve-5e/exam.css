@@ -34,3 +34,6 @@ body.official-exam {
 .official-exam .chain input { min-width: 0; width: 100%; }
 .official-exam .chain small { min-height: 32px; display: block; }
 .official-exam :focus-visible { outline: 2px solid #29665f; outline-offset: 2px; }
+.official-exam .source-sort { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.official-exam [data-source-drop] { padding: 8px; min-height: 68px; border: 1px dashed #aab7bb; }
+.official-exam [data-source][aria-pressed="true"] { background: #d9e9e5; border-color: #244c49; }

@@ -39,6 +39,7 @@ const notice = message => { $('#notice').textContent = message; };
 let id;
 let answers = {};
 let selected;
+let selectedSource;
 let deadline;
 let remainingAtSync;
 let syncClock;
@@ -121,6 +122,29 @@ function associationLabels() {
     button.setAttribute('aria-pressed', String(selected === button.dataset.label));
   });
 }
+function standard(question, index) {
+  const words = question.suggestions ?? question.hints ?? [];
+  return `<fieldset class="question"><legend>${index + 1}. ${escape(question.prompt)}</legend>
+    ${question.options ? question.options.map(option => `<label class="radio-line"><input type="radio" name="question-${index}" data-answer="${index}" value="${escape(option)}" ${answers[index] === option ? 'checked' : ''}> ${escape(option)}</label>`).join('') :
+    `${words.length ? `<div class="word-help">Mots proposés · ${words.map(escape).join(' · ')}</div>` : ''}${input(question,index,'Ta réponse')}`}</fieldset>`;
+}
+function sortSources(entries) {
+  const boxes = ['Renouvelable','Non renouvelable'];
+  const cards = category => entries.filter(([,i]) => answers[i] === category || (!category && !answers[i]))
+    .map(([q,i]) => `<button type="button" draggable="true" data-source="${i}" aria-pressed="${String(selectedSource === String(i))}">${i+1}. ${escape(q.card)}</button>`).join('');
+  return `<p>Choisis une source puis sa catégorie, ou glisse-la dans la bonne colonne.</p>
+    <div class="form-bank">${cards(undefined)}</div>
+    <div class="source-sort">${boxes.map(category => `<div data-source-drop="${category}"><button type="button" data-category="${category}">${category}</button>
+      <div class="form-bank">${cards(category)}</div></div>`).join('')}</div>`;
+}
+let sourceEntries = [];
+function placeSource(index, category) {
+  if (submissionRequested || finished || !sourceEntries.some(([,i]) => String(i) === index)) return;
+  setAnswer(index,category);
+  selectedSource = undefined;
+  $('#source-sort-group').innerHTML = sortSources(sourceEntries);
+  document.querySelector(`[data-source="${index}"]`)?.focus({preventScroll:true});
+}
 function render(paper) {
   let offset = 0;
   $('#questions').innerHTML = paper.map((section, part) => {
@@ -132,17 +156,16 @@ function render(paper) {
       body = `<img src="photos/electric-bicycle.jpg" width="200" alt="Vélo à assistance électrique">
         <div class="word-help">${section.banks.map(([label,words]) => `<div><strong>${escape(label)}</strong> · ${words.map(escape).join(' · ')}</div>`).join('')}</div>
         <div class="chain">${Array.from({length:4},(_,i) => `<fieldset><legend>Étape ${i+1}${i<3 ? ' →' : ''}</legend>${section.items.slice(i*3,i*3+3).map((q,j) => input(q,start+i*3+j,q.prompt)).join('')}</fieldset>`).join('')}</div>`;
-    } else if (section.labels) {
-      body = `<p>Sélectionne une étiquette, puis clique sur la case correspondante. Pour retirer une réponse, clique sur sa case.</p>
-        <div class="form-bank">${section.labels.map(label => `<button type="button" data-label="${escape(label)}" aria-pressed="false">${escape(label)}</button>`).join('')}</div>
-        ${section.items.map((q,i) => `<div class="association"><span>${start+i+1}. ${escape(q.prompt)}</span><button type="button" data-match="${start+i}">${escape(answers[start+i] || 'Associer ici')}</button></div>`).join('')}`;
     } else {
-      body = section.items.map((q,i) => {
-        const index = start+i;
-        return `<fieldset class="question"><legend>${index+1}. ${escape(q.prompt)}</legend>
-          ${q.options ? q.options.map(option => `<label class="radio-line"><input type="radio" name="question-${index}" data-answer="${index}" value="${escape(option)}" ${answers[index] === option ? 'checked' : ''}> ${escape(option)}</label>`).join('') :
-          `<div class="word-help">Mots proposés · ${q.hints.map(escape).join(' · ')}</div>${input(q,index,'Ta réponse')}`}</fieldset>`;
-      }).join('');
+      const entries = section.items.map((question,i) => [question,start+i]);
+      const sorting = entries.filter(([q]) => q.interaction === 'sort');
+      const matching = section.labels ? entries.filter(([q]) => q.interaction === 'match' || !q.suggestions) : [];
+      if (sorting.length) sourceEntries = sorting;
+      body = sorting.length ? `<div id="source-sort-group">${sortSources(sorting)}</div>` : '';
+      if (matching.length) body += `<p>Sélectionne une étiquette puis la situation correspondante. Clique sur une case remplie pour libérer l’étiquette.</p>
+        <div class="form-bank">${section.labels.map(label => `<button type="button" data-label="${escape(label)}" aria-pressed="false">${escape(label)}</button>`).join('')}</div>
+        ${matching.map(([q,i]) => `<div class="association"><span>${i+1}. ${escape(q.prompt)}</span><button type="button" data-match="${i}">${escape(answers[i] || 'Associer ici')}</button></div>`).join('')}`;
+      body += entries.filter(entry => !sorting.includes(entry) && !matching.includes(entry)).map(([q,i]) => standard(q,i)).join('');
     }
     return `<section><h2>${part+1}. ${escape(section.title)} · ${points} points</h2><p>${escape(section.guide)}</p>${body}</section>`;
   }).join('');
@@ -156,6 +179,7 @@ function open(result) {
   remainingAtSync = deadline - result.serverTime;
   syncClock = performance.now();
   render(result.paper);
+  if (result.subject_number) $('.official-clock strong').textContent = `Épreuve de technologie · 5e · Sujet ${String(result.subject_number).padStart(3,'0')}`;
   $('#welcome').hidden = true;
   $('#exam').hidden = false;
   notice('');
@@ -181,7 +205,13 @@ $('#work').addEventListener('input', event => {
 $('#work').addEventListener('click', event => {
   const button = event.target.closest('button');
   if (!button || submissionRequested) return;
-  if (button.dataset.label) {
+  if (button.dataset.source) {
+    selectedSource = selectedSource === button.dataset.source ? undefined : button.dataset.source;
+    document.querySelectorAll('[data-source]').forEach(card =>
+      card.setAttribute('aria-pressed', String(card.dataset.source === selectedSource)));
+  } else if (button.dataset.category && selectedSource !== undefined) {
+    placeSource(selectedSource, button.dataset.category);
+  } else if (button.dataset.label) {
     selected = selected === button.dataset.label ? undefined : button.dataset.label;
     associationLabels();
   } else if (button.dataset.match) {
@@ -190,6 +220,21 @@ $('#work').addEventListener('click', event => {
     selected = undefined;
     associationLabels();
   }
+});
+$('#work').addEventListener('dragstart', event => {
+  const card = event.target.closest('[data-source]');
+  if (card && !submissionRequested) event.dataTransfer.setData('application/x-energy-source',card.dataset.source);
+});
+$('#work').addEventListener('dragover', event => {
+  if (!submissionRequested && event.target.closest('[data-source-drop]') &&
+      event.dataTransfer.types.includes('application/x-energy-source')) event.preventDefault();
+});
+$('#work').addEventListener('drop', event => {
+  const box = event.target.closest('[data-source-drop]');
+  const index = event.dataTransfer.getData('application/x-energy-source');
+  if (!box || !index) return;
+  event.preventDefault();
+  placeSource(index,box.dataset.sourceDrop);
 });
 $('#work').addEventListener('submit', event => {
   event.preventDefault();
