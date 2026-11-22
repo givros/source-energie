@@ -1,0 +1,36 @@
+body.official-exam {
+  min-width: 0; color-scheme: light; background: #edf0f1; color: #101618;
+  font-family: Arial, sans-serif;
+}
+.official-exam main { max-width: 940px; margin: 20px auto; padding: 28px 34px 40px; background: white; }
+.official-exam h1 { margin: 0; font-size: 2rem; }
+.official-exam h2 { margin-top: 30px; border-bottom: 1px solid #aab7bb; padding-bottom: 6px; }
+.official-exam p { line-height: 1.45; }
+.official-exam .competency { max-width: 68ch; }
+#identity { display: grid; gap: 11px; max-width: 340px; }
+.official-exam label { display: grid; gap: 5px; }
+.official-exam input:not([type="radio"]), .official-exam button {
+  font: inherit; color: inherit; padding: 7px 8px; border: 1px solid #8b999e; border-radius: 3px; background: #fff;
+}
+.official-exam button { width: fit-content; cursor: pointer; }
+.official-exam button[type="submit"] { background: #244c49; color: #fff; margin-top: 12px; }
+.official-exam button:disabled { opacity: .55; cursor: default; }
+.official-clock { background: white; display: flex; gap: 12px; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 1; border-bottom: 2px solid #244c49; padding: 12px 0; }
+#clock { font: bold 1.45rem Arial, sans-serif; font-variant-numeric: tabular-nums; }
+#notice:empty { display: none; }
+.official-exam .question { margin: 13px 0; border: 0; padding: 3px 0; min-width: 0; }
+.official-exam legend { font-weight: bold; padding: 0; }
+.official-exam .radio-line { display: inline-flex; align-items: center; gap: 6px; margin: 7px 14px 0 0; }
+.official-exam .exam-text { margin-top: 8px; width: min(100%, 480px); }
+.official-exam .word-help { background: #f1f4f4; padding: 6px 9px; font-size: .9rem; }
+.official-exam .form-bank { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.official-exam .form-bank [aria-pressed="true"] { background: #d9e9e5; border-color: #244c49; }
+.official-exam .association { display: grid; grid-template-columns: 1fr 180px; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #e1e8e8; }
+.official-exam .association button { width: 100%; }
+.official-exam .chain { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+.official-exam .chain fieldset { min-width: 0; border: 1px solid #bac5c9; padding: 7px; }
+.official-exam .chain label { display: grid; margin-bottom: 8px; }
+.official-exam .chain input { min-width: 0; width: 100%; }
+.official-exam .chain small { min-height: 32px; display: block; }
+.official-exam :focus-visible { outline: 2px solid #29665f; outline-offset: 2px; }
