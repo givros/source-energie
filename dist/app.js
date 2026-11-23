@@ -15,6 +15,7 @@ gradeLink.textContent = isFourthGrade ? 'Version 5e' : 'Version 4e';
 if (isFourthGrade) {
   document.title = 'Mission Énergie · Technologie 4e';
   document.querySelector('.brand').href = '#cours';
+  document.querySelector('.official-link').hidden = true;
 }
 const retainedMissions = new Set(['sources-tri', 'chaine-ordre', 'chaine-pieces']);
 const scores = readScores();
