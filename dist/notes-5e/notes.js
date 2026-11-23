@@ -2,7 +2,9 @@ const endpoint = 'https://yswswuxtdjpewrqzrrnu.supabase.co/functions/v1/energy-e
 const collator = new Intl.Collator('fr-FR',{sensitivity:'base',numeric:true});
 const formatGrade = new Intl.NumberFormat('fr-FR',{maximumFractionDigits:2});
 const $ = id => document.getElementById(id);
-let code = '';
+const sessionKey = 'mission-energie-teacher-session';
+let session = '';
+try { session = localStorage.getItem(sessionKey) ?? ''; } catch {}
 let classes = new Map();
 let loadId = 0;
 
@@ -53,7 +55,7 @@ function render() {
   }
 }
 
-async function load() {
+async function load(code) {
   const current=++loadId;
   $('status').textContent='Chargement des notes…';
   $('refresh').disabled=true;
@@ -63,9 +65,19 @@ async function load() {
     let offset=0;
     do {
       const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({code,offset}),signal:AbortSignal.timeout(10000)});
+        body:JSON.stringify({code:session ? undefined : code,session:session || undefined,offset}),signal:AbortSignal.timeout(10000)});
       const data=await response.json();
+      if (current !== loadId) return;
+      if (response.status === 401 && session) {
+        closeAccess();
+        $('status').textContent = data.error ?? 'Saisis de nouveau le code professeur.';
+        return;
+      }
       if (!response.ok) throw new Error(data.error ?? 'Impossible de récupérer les notes.');
+      if (data.session) {
+        session = data.session;
+        try { localStorage.setItem(sessionKey,session); } catch {}
+      }
       all.push(...data.rows);
       offset=data.next;
     } while (offset !== null && current === loadId);
@@ -81,7 +93,6 @@ async function load() {
     render();
   } catch(error) {
     if (current === loadId) $('status').textContent=error.message;
-    if (!$('access').hidden) code='';
   } finally {
     if (current === loadId) {
       $('refresh').disabled=false;
@@ -92,14 +103,14 @@ async function load() {
 
 $('access').addEventListener('submit',event=>{
   event.preventDefault();
-  code=$('code').value.trim();
-  void load();
+  void load($('code').value.trim());
 });
 $('class-filter').addEventListener('change',render);
 $('refresh').addEventListener('click',()=>void load());
-$('lock').addEventListener('click',()=>{
+function closeAccess() {
   loadId++;
-  code='';
+  session='';
+  try { localStorage.removeItem(sessionKey); } catch {}
   classes.clear();
   $('class-list').replaceChildren();
   $('class-filter').replaceChildren();
@@ -108,4 +119,6 @@ $('lock').addEventListener('click',()=>{
   $('access').hidden=false;
   $('access').querySelector('button').disabled=false;
   $('code').focus();
-});
+}
+$('lock').addEventListener('click',closeAccess);
+if (session) void load();

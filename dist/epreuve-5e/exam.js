@@ -13,7 +13,14 @@ main.innerHTML = `  <section id="welcome">
     <form id="identity">
       <label>Nom <input name="lastName" maxlength="80" autocomplete="family-name" required></label>
       <label>Prénom <input name="firstName" maxlength="80" autocomplete="given-name" required></label>
-      <label>Classe <input name="className" maxlength="30" autocomplete="off" required></label>
+      <div class="class-choice"><label for="exam-class">Classe</label>
+        <select id="exam-class" name="className" required>
+          <option value="" selected disabled>Choisis ta classe</option>
+          <option value="5C">5C</option>
+          <option value="5F">5F</option>
+          <option value="5G">5G</option>
+        </select>
+      </div>
       <button type="submit">Démarrer</button>
     </form>
   </section>
@@ -22,7 +29,8 @@ main.innerHTML = `  <section id="welcome">
     <header class="official-clock"><strong>Épreuve de technologie · 5e</strong><span id="clock" role="timer">20:00</span></header>
     <form id="work">
       <div id="questions"></div>
-      <button type="submit">Soumettre ma copie</button>
+      <label class="submit-confirmation"><input type="checkbox" id="confirm-submit"> Je confirme que je veux remettre ma copie.</label>
+      <button type="submit" id="submit-exam" disabled>Soumettre ma copie</button>
     </form>
   </section>
   <section id="received" hidden>
@@ -236,9 +244,12 @@ $('#work').addEventListener('drop', event => {
   event.preventDefault();
   placeSource(index,box.dataset.sourceDrop);
 });
+$('#confirm-submit').addEventListener('change', () => {
+  $('#submit-exam').disabled = submissionRequested || !$('#confirm-submit').checked;
+});
 $('#work').addEventListener('submit', event => {
   event.preventDefault();
-  if (submissionRequested) return;
+  if (submissionRequested || !$('#confirm-submit').checked) return;
   submissionRequested = true;
   lock();
   void flush();

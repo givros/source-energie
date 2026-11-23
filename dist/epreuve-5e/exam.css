@@ -9,7 +9,7 @@ body.official-exam {
 .official-exam .competency { max-width: 68ch; }
 #identity { display: grid; gap: 11px; max-width: 340px; }
 .official-exam label { display: grid; gap: 5px; }
-.official-exam input:not([type="radio"]), .official-exam button {
+.official-exam input:not([type="radio"]), .official-exam select, .official-exam button {
   font: inherit; color: inherit; padding: 7px 8px; border: 1px solid #8b999e; border-radius: 3px; background: #fff;
 }
 .official-exam button { width: fit-content; cursor: pointer; }
@@ -37,3 +37,7 @@ body.official-exam {
 .official-exam .source-sort { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .official-exam [data-source-drop] { padding: 8px; min-height: 68px; border: 1px dashed #aab7bb; }
 .official-exam [data-source][aria-pressed="true"] { background: #d9e9e5; border-color: #244c49; }
+.official-exam .submit-confirmation { display: flex; align-items: center; gap: 8px; margin-top: 22px; cursor: pointer; }
+.official-exam .submit-confirmation input { padding: 0; width: 17px; height: 17px; accent-color: #244c49; }
+
+#identity .class-choice { display: grid; gap: 5px; }
