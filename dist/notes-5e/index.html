@@ -15,13 +15,13 @@
     <form id="access">
       <label for="code">Code professeur</label>
       <input id="code" type="password" required autocomplete="off" maxlength="43">
-      <button type="submit">Afficher les notes</button>
+      <button type="submit">Ouvrir l’accès</button>
     </form>
     <p id="status" role="status"></p>
     <section id="results" hidden>
       <div class="toolbar">
         <label for="class-filter">Classe</label>
-        <select id="class-filter"></select>
+        <select id="class-filter" disabled><option value="">Toutes les classes</option></select>
         <button type="button" id="refresh">Actualiser</button>
         <button type="button" id="lock">Fermer l’accès</button>
       </div>

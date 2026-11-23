@@ -55,9 +55,17 @@ function render() {
   }
 }
 
+function showRefresh() {
+  $('access').hidden=true;
+  $('code').value='';
+  $('results').hidden=false;
+  $('status').textContent='Clique sur Actualiser pour charger les notes.';
+}
+
 async function load(code) {
+  const signingIn=code !== undefined;
   const current=++loadId;
-  $('status').textContent='Chargement des notes…';
+  $('status').textContent=signingIn ? 'Vérification du code…' : 'Chargement des notes…';
   $('refresh').disabled=true;
   $('access').querySelector('button').disabled=true;
   try {
@@ -65,7 +73,7 @@ async function load(code) {
     let offset=0;
     do {
       const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({code:session ? undefined : code,session:session || undefined,offset}),signal:AbortSignal.timeout(10000)});
+        body:JSON.stringify(signingIn ? {code,authOnly:true} : {session,offset}),signal:AbortSignal.timeout(10000)});
       const data=await response.json();
       if (current !== loadId) return;
       if (response.status === 401 && session) {
@@ -78,6 +86,10 @@ async function load(code) {
         session = data.session;
         try { localStorage.setItem(sessionKey,session); } catch {}
       }
+      if (signingIn) {
+        showRefresh();
+        return;
+      }
       all.push(...data.rows);
       offset=data.next;
     } while (offset !== null && current === loadId);
@@ -87,6 +99,7 @@ async function load(code) {
     const previous=select.value;
     select.replaceChildren(new Option('Toutes les classes',''),...[...classes.keys()].map(key=>new Option(key,key)));
     select.value=classes.has(previous) ? previous : '';
+    select.disabled=!classes.size;
     $('access').hidden=true;
     $('code').value='';
     $('results').hidden=false;
@@ -113,7 +126,8 @@ function closeAccess() {
   try { localStorage.removeItem(sessionKey); } catch {}
   classes.clear();
   $('class-list').replaceChildren();
-  $('class-filter').replaceChildren();
+  $('class-filter').replaceChildren(new Option('Toutes les classes',''));
+  $('class-filter').disabled=true;
   $('status').textContent='';
   $('results').hidden=true;
   $('access').hidden=false;
@@ -121,4 +135,7 @@ function closeAccess() {
   $('code').focus();
 }
 $('lock').addEventListener('click',closeAccess);
-if (session) void load();
+if (session) {
+  showRefresh();
+  if (performance.getEntriesByType('navigation')[0]?.type === 'reload') void load();
+}

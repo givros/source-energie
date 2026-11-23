@@ -9,7 +9,7 @@ main.innerHTML = `  <section id="welcome">
     <h1>Épreuve de technologie · 5e</h1>
     <p>Sources, formes et chaîne d’énergie · 20 minutes · /20</p>
     <p class="competency">Identifier des constituants de la chaîne d’énergie d’un objet technique (l’organisation de la chaîne d’énergie étant fournie)</p>
-    <p>Le chronomètre démarre lorsque tu cliques sur <strong>Démarrer</strong>. Tu peux soumettre ta copie avant la fin. À 00:00, les réponses enregistrées sont remises automatiquement.</p>
+    <p>Tu as 20 minutes après avoir cliqué sur <strong>Démarrer</strong>. Avant la fin du chrono, coche la confirmation puis clique sur <strong>Soumettre ma copie</strong>.</p>
     <form id="identity">
       <label>Nom <input name="lastName" maxlength="80" autocomplete="family-name" required></label>
       <label>Prénom <input name="firstName" maxlength="80" autocomplete="given-name" required></label>
@@ -48,16 +48,13 @@ let id;
 let answers = {};
 let selected;
 let selectedSource;
-let deadline;
+let draft;
 let remainingAtSync;
 let syncClock;
 let revision = 0;
-let sentRevision = 0;
 let timer;
-let queued;
-let pending = false;
-let submissionRequested = false;
-let finished = false;
+let sending = false;
+let expired = false;
 
 async function request(action, extra = {}) {
   const response = await fetch(endpoint, {
@@ -65,13 +62,19 @@ async function request(action, extra = {}) {
     body: JSON.stringify({action, id, ...extra}), signal: AbortSignal.timeout(10000),
   });
   const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error ?? 'Connexion indisponible.');
+  if (!response.ok) {
+    const error = new Error(payload.error ?? 'Connexion indisponible.');
+    error.expired = payload.code === 'expired';
+    throw error;
+  }
   return payload;
 }
+function storeSession(value) {
+  try { sessionStorage.setItem(sessionKey, JSON.stringify(value)); } catch {}
+}
 function finish() {
-  finished = true;
   clearInterval(timer);
-  clearTimeout(queued);
+  storeSession({id, submitted: true});
   $('#welcome').hidden = true;
   $('#exam').hidden = true;
   $('#received').hidden = false;
@@ -80,45 +83,46 @@ function finish() {
 function clock() {
   const seconds = Math.max(0, Math.ceil((remainingAtSync - (performance.now() - syncClock)) / 1000));
   $('#clock').textContent = `${String(Math.floor(seconds / 60)).padStart(2,'0')}:${String(seconds % 60).padStart(2,'0')}`;
-  if (seconds === 0 && !submissionRequested) {
-    submissionRequested = true;
-    lock();
-    void flush();
+  if (seconds === 0) {
+    clearInterval(timer);
+    if (!draft.submissionRevision) expire();
   }
 }
-function lock() {
-  $('#work').querySelectorAll('input,button').forEach(control => { control.disabled = true; });
+function updateControls() {
+  const confirmation = $('#confirm-submit');
+  $('#questions').inert = expired || Boolean(draft.submissionRevision);
+  confirmation.disabled = sending || expired;
+  $('#submit-exam').disabled = confirmation.disabled || !confirmation.checked;
+}
+function expire() {
+  expired = true;
+  updateControls();
+  notice('Temps écoulé. Ta copie n’a pas été remise.');
+}
+async function submitCopy() {
+  sending = true;
+  draft.submissionRevision ??= revision + 1;
+  storeSession(draft);
+  updateControls();
   notice('Remise de la copie en cours…');
-}
-function schedule(delay) {
-  clearTimeout(queued);
-  queued = setTimeout(flush, delay);
-}
-async function flush() {
-  if (pending || finished || (!submissionRequested && revision <= sentRevision)) return;
-  pending = true;
-  const submitting = submissionRequested;
-  let retry = false;
   try {
-    const result = await request(submitting ? 'submit' : 'save', {
-      revision: submitting ? ++revision : revision, answers: {...answers},
+    const result = await request('submit', {
+      revision: draft.submissionRevision, answers,
     });
-    sentRevision = Math.max(sentRevision,result.revision);
-    if (result.submitted_at) finish();
-    else notice('');
-  } catch {
-    notice(submitting ? 'Remise en attente de connexion. Laisse cette page ouverte.' : 'Connexion interrompue. Enregistrement en cours de réessai.');
-    retry = true;
+    if (!result.submitted_at) throw new Error('Remise à vérifier.');
+    finish();
+  } catch (error) {
+    if (error.expired) expire();
+    else notice('Envoi non confirmé. Clique de nouveau sur « Soumettre ma copie » pour réessayer.');
   } finally {
-    pending = false;
-    if (!finished && (retry || submissionRequested || revision > sentRevision)) schedule(retry ? 1400 : 0);
+    sending = false;
+    updateControls();
   }
 }
 function setAnswer(index, value) {
-  if (submissionRequested || finished) return;
+  if (expired || draft.submissionRevision) return;
   answers[index] = value;
-  revision++;
-  schedule(220);
+  storeSession(draft);
 }
 function input(question, index, label) {
   return `<label>${escape(label)}<input class="exam-text" data-answer="${index}" value="${escape(answers[index] ?? '')}" maxlength="300" autocomplete="off">${question.tail ? `<small>${escape(question.tail)}</small>` : ''}</label>`;
@@ -147,7 +151,7 @@ function sortSources(entries) {
 }
 let sourceEntries = [];
 function placeSource(index, category) {
-  if (submissionRequested || finished || !sourceEntries.some(([,i]) => String(i) === index)) return;
+  if (expired || draft.submissionRevision || !sourceEntries.some(([,i]) => String(i) === index)) return;
   setAnswer(index,category);
   selectedSource = undefined;
   $('#source-sort-group').innerHTML = sortSources(sourceEntries);
@@ -179,20 +183,20 @@ function render(paper) {
   }).join('');
   associationLabels();
 }
-function open(result) {
-  if (result.submitted_at) { finish(); return; }
-  answers = result.answers;
-  revision = sentRevision = result.revision;
-  deadline = Date.parse(result.deadline);
-  remainingAtSync = deadline - result.serverTime;
+function open(saved) {
+  draft = saved;
+  answers = saved.answers;
+  revision = saved.revision;
+  remainingAtSync = saved.localDeadline - Date.now();
   syncClock = performance.now();
-  render(result.paper);
-  if (result.subject_number) $('.official-clock strong').textContent = `Épreuve de technologie · 5e · Sujet ${String(result.subject_number).padStart(3,'0')}`;
+  render(saved.paper);
+  if (saved.subjectNumber) $('.official-clock strong').textContent = `Épreuve de technologie · 5e · Sujet ${String(saved.subjectNumber).padStart(3,'0')}`;
   $('#welcome').hidden = true;
   $('#exam').hidden = false;
-  notice('');
-  clock();
+  notice(saved.submissionRevision ? 'Envoi non confirmé. Coche la confirmation puis clique sur « Soumettre ma copie » pour réessayer.' : '');
+  updateControls();
   timer = setInterval(clock,250);
+  clock();
 }
 $('#identity').addEventListener('submit', async event => {
   event.preventDefault();
@@ -201,18 +205,27 @@ $('#identity').addEventListener('submit', async event => {
   button.disabled = true;
   id ??= crypto.randomUUID();
   try {
-    const result = await request('start',Object.fromEntries(new FormData(form)));
-    try { sessionStorage.setItem(sessionKey,id); } catch {}
-    open(result);
+    const result = await request('start',{...Object.fromEntries(new FormData(form)), manualOnly: true});
+    if (result.submitted_at) { finish(); return; }
+    const saved = {
+      id, answers: result.answers, revision: result.revision,
+      localDeadline: Date.now() + (Date.parse(result.deadline) - result.serverTime),
+      subjectNumber: result.subject_number, paper: result.paper,
+    };
+    storeSession(saved);
+    open(saved);
   } catch (error) { notice(error.message); }
   finally { button.disabled = false; }
 });
 $('#work').addEventListener('input', event => {
   if (event.target.matches('[data-answer]')) setAnswer(event.target.dataset.answer,event.target.value);
 });
+$('#questions').addEventListener('keydown', event => {
+  if (event.key === 'Enter' && event.target.matches('input[type="text"], input:not([type])')) event.preventDefault();
+});
 $('#work').addEventListener('click', event => {
   const button = event.target.closest('button');
-  if (!button || submissionRequested) return;
+  if (!button || !draft || expired || draft.submissionRevision) return;
   if (button.dataset.source) {
     selectedSource = selectedSource === button.dataset.source ? undefined : button.dataset.source;
     document.querySelectorAll('[data-source]').forEach(card =>
@@ -231,10 +244,10 @@ $('#work').addEventListener('click', event => {
 });
 $('#work').addEventListener('dragstart', event => {
   const card = event.target.closest('[data-source]');
-  if (card && !submissionRequested) event.dataTransfer.setData('application/x-energy-source',card.dataset.source);
+  if (card && !expired && !draft.submissionRevision) event.dataTransfer.setData('application/x-energy-source',card.dataset.source);
 });
 $('#work').addEventListener('dragover', event => {
-  if (!submissionRequested && event.target.closest('[data-source-drop]') &&
+  if (!expired && !draft.submissionRevision && event.target.closest('[data-source-drop]') &&
       event.dataTransfer.types.includes('application/x-energy-source')) event.preventDefault();
 });
 $('#work').addEventListener('drop', event => {
@@ -244,25 +257,21 @@ $('#work').addEventListener('drop', event => {
   event.preventDefault();
   placeSource(index,box.dataset.sourceDrop);
 });
-$('#confirm-submit').addEventListener('change', () => {
-  $('#submit-exam').disabled = submissionRequested || !$('#confirm-submit').checked;
-});
+$('#confirm-submit').addEventListener('change', updateControls);
 $('#work').addEventListener('submit', event => {
   event.preventDefault();
-  if (submissionRequested || !$('#confirm-submit').checked) return;
-  submissionRequested = true;
-  lock();
-  void flush();
+  if (!draft || sending || !$('#confirm-submit').checked) return;
+  clock();
+  if (!expired) void submitCopy();
 });
-window.addEventListener('online', () => { if (id && deadline) schedule(0); });
-window.addEventListener('pagehide', () => {
-  if (!deadline || finished || (!submissionRequested && revision <= sentRevision)) return;
-  void fetch(endpoint, {method:'POST',headers:{'Content-Type':'application/json'},keepalive:true,
-    body:JSON.stringify({action:submissionRequested?'submit':'save',id,revision:submissionRequested?++revision:revision,answers})}).catch(()=>{});
-});
-try { id = sessionStorage.getItem(sessionKey); } catch {}
-if (id) {
-  const button = $('#identity button');
-  button.disabled = true;
-  request('resume').then(open).catch(error => notice(error.message)).finally(() => { button.disabled = false; });
+let saved;
+try {
+  const stored = sessionStorage.getItem(sessionKey);
+  if (stored?.startsWith('{')) saved = JSON.parse(stored);
+  else id = stored || undefined;
+} catch {}
+if (saved) {
+  id = saved.id;
+  if (saved.submitted) finish();
+  else open(saved);
 }
