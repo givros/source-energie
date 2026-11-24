@@ -215,6 +215,19 @@ const fourthGradeRounds = {
   'defi-final': identify('motor', 'Quelle observation permet de dire que le moteur convertit l’énergie ?', 'Il reçoit de l’énergie électrique et produit une rotation.', ['La chaîne transmet une rotation à la roue.', 'La batterie fournit le courant.'], 'Le moteur change la forme de l’énergie. Transmettre une rotation d’une pièce à une autre ne change pas sa forme.'),
 };
 
+const fourthGradeLessons = {
+  'sources-photo': ['Repérer la source', 'La source est ce dont le système tire son énergie. Un panneau photovoltaïque utilise le rayonnement du Soleil et fournit de l’électricité au circuit.'],
+  'sources-tri': ['Classer les ressources', 'On compare la vitesse à laquelle une ressource se reconstitue et celle à laquelle on l’utilise. Le charbon se forme sur des millions d’années. À l’échelle humaine, son stock diminue quand on l’exploite.'],
+  'sources-diagnostic': ['Distinguer source et forme', 'La source indique d’où vient l’énergie. La forme indique comment elle est stockée ou transférée. Dans une chaufferie, le gaz naturel est la source et l’énergie thermique réchauffe l’eau.'],
+  formes: ['Reconnaître une forme d’énergie', 'Observe ce qui se passe ou ce qui est stocké. Un ascenseur à l’arrêt en haut d’un bâtiment possède de l’énergie potentielle de pesanteur. Quand il se déplace, il possède aussi de l’énergie cinétique.'],
+  'photo-match': ['Décrire une transformation', 'Pour décrire une conversion, nomme la forme d’énergie reçue puis la forme utile obtenue. Un panneau photovoltaïque convertit une partie de l’énergie du rayonnement solaire en énergie électrique.'],
+  conversions: ['Repérer l’énergie utile', 'La forme d’énergie utile dépend de l’action recherchée. Dans une lampe, la lumière sert à éclairer. Une partie de l’énergie électrique est aussi convertie en énergie thermique.'],
+  'chaine-ordre': ['Suivre le trajet de l’énergie', 'Pars de la réserve d’énergie et suis les pièces jusqu’à l’action finale. Dans une visseuse sans fil, l’énergie passe de la batterie au moteur via la gâchette et son circuit. Les engrenages transmettent ensuite la rotation à l’embout.'],
+  'chaine-pieces': ['Associer une pièce à son rôle', 'Une fonction décrit ce que fait une pièce. Dans un portail automatique, un relais pilote l’alimentation du moteur. Un système à engrenages transmet ensuite le mouvement au portail.'],
+  'chaine-panne': ['Localiser une panne', 'Commence par repérer ce qui fonctionne encore. Si le moteur d’un portail tourne mais que le portail reste immobile, on peut vérifier les pièces qui transmettent le mouvement.'],
+  'defi-final': ['Raisonner de la source à l’action', 'Pour analyser un objet, distingue sa source d’énergie, les formes d’énergie mises en jeu et le rôle des pièces. Dans une lampe solaire, le panneau convertit le rayonnement solaire en énergie électrique et la batterie stocke de l’énergie sous forme chimique.'],
+};
+
 export const fourthGradeMissions = missions.map(mission => ({
-  ...mission, rounds: [...mission.rounds, fourthGradeRounds[mission.id]],
+  ...mission, lesson: fourthGradeLessons[mission.id], rounds: [...mission.rounds, fourthGradeRounds[mission.id]],
 }));

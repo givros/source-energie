@@ -34,22 +34,24 @@ export function createCourse(root) {
   function sourcePage() {
     const [file, label, renewable, explanation] = sources[sourceIndex];
     return `<h2>D’où vient l’énergie ?</h2>
-      <p>Une source indique l’origine de l’énergie. Observe chaque photo, puis classe la ressource.</p>
+      <p>Une <strong>source d’énergie</strong> indique d’où vient l’énergie. Un chauffe-eau solaire utilise le rayonnement du Soleil pour réchauffer de l’eau.</p>
+      <p class="lesson-takeaway">Une source <strong>renouvelable</strong> se renouvelle à l’échelle humaine. Le stock d’une source <strong>non renouvelable</strong> se reconstitue trop lentement par rapport à sa consommation.</p>
+      <h3>À toi de classer les ressources</h3>
       <div class="lesson-options">${sources.map((source, i) => button(`source:${i}`, source[1], i === sourceIndex)).join('')}</div>
       <div class="lesson-scene"><figure>${photo(file, label)}</figure><div>
         <h3>Cette ressource se renouvelle-t-elle assez vite ?</h3>
         <div class="lesson-options">${button('classify:yes', 'Renouvelable', sourceAnswer === 'yes')}${button('classify:no', 'Non renouvelable', sourceAnswer === 'no')}</div>
         ${sourceAnswer === undefined ? '' : `<p class="lesson-feedback" role="status"><strong>${(sourceAnswer === 'yes') === renewable ? 'Exact.' : 'À revoir.'}</strong> ${explanation}</p>`}
-      </div></div>
-      <p class="lesson-takeaway"><strong>À retenir.</strong> Une source renouvelable revient assez vite à l’échelle humaine. Une source non renouvelable s’épuise parce que son stock se reconstitue trop lentement.</p>`;
+      </div></div>`;
   }
 
   function formPage() {
     const [file, label, explanation] = forms[formIndex];
     return `<h2>Comment l’énergie se manifeste-t-elle ?</h2>
-      <p>Explore les sept formes, chacune illustrée par une situation.</p>
+      <p>La <strong>forme</strong> décrit comment l’énergie est stockée, transférée ou se manifeste. Explore les sept formes à partir des photos.</p>
       <div class="lesson-options">${forms.map((form, i) => button(`form:${i}`, form[1], i === formIndex)).join('')}</div>
       <div class="lesson-scene"><figure>${photo(file, label)}</figure><div><h3>Énergie ${label.toLowerCase()}</h3><p aria-live="polite">${explanation}</p></div></div>
+      <p class="lesson-takeaway"><strong>Convertir</strong>, c’est transformer une forme d’énergie en une autre. Dans une lampe, l’énergie reçue est électrique. La lumière est utile pour éclairer et la lampe peut aussi chauffer.</p>
       <h3>Le moteur tourne et chauffe. Qu’est-ce qui fait avancer le vélo ?</h3>
       <div class="lesson-options">${button('useful:rotation', 'La rotation', usefulAnswer === 'rotation')}${button('useful:heat', 'La chaleur', usefulAnswer === 'heat')}</div>
       ${usefulAnswer ? `<p class="lesson-feedback" role="status"><strong>${usefulAnswer === 'rotation' ? 'Exact.' : 'À revoir.'}</strong> L’énergie reçue est électrique. La rotation est la forme utile, liée au mouvement. Une partie de l’énergie est aussi dissipée sous forme de chaleur.</p>` : ''}`;
@@ -58,8 +60,10 @@ export function createCourse(root) {
   function chainPage() {
     const correct = order.length === chain.length && order.every((value, index) => value === index);
     return `<h2>Suis l’énergie dans le vélo</h2>
+      <p>La <strong>chaîne d’énergie</strong> suit l’énergie depuis son arrivée dans le système jusqu’à l’action obtenue. Chaque fonction dit ce qui est fait. Le <strong>constituant</strong> est la pièce qui la réalise.</p>
+      <p class="lesson-takeaway">Dans une visseuse sans fil, la batterie <strong>alimente</strong> le circuit, la gâchette et son circuit <strong>distribuent</strong> l’énergie au moteur, le moteur la <strong>convertit</strong> en rotation et les engrenages <strong>transmettent</strong> le mouvement à l’embout.</p>
       <div class="lesson-scene lesson-bike"><figure>${photo('electric-bicycle', 'Vélo à assistance électrique')}</figure>
-        <p>La batterie fournit l’énergie électrique. Le moteur transforme cette énergie en rotation et la roue arrière entraîne le vélo. Place les quatre fonctions dans l’ordre, de la batterie à la roue.</p>
+        <div><h3>À toi de reconstituer la chaîne du vélo</h3><p>Place les quatre étiquettes dans l’ordre, de la batterie à la roue arrière. Une fois l’ordre trouvé, les pièces et leur rôle s’affichent.</p></div>
       </div>
       <div class="lesson-options">${chainOptions.map(index => `<button type="button" class="secondary" data-course="stage:${index}" ${order.includes(index) ? 'disabled' : ''}>${chain[index][0]}</button>`).join('')}</div>
       <ol class="lesson-chain" aria-label="Chaîne reconstituée">${chain.map((_, index) => {

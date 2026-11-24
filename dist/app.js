@@ -204,6 +204,7 @@ function roundStatus() {
 
 function renderRound() {
   const { mission, round, index } = run;
+  const lesson = index === 0 && mission.lesson;
   app.innerHTML = `<section class="game">
     <a class="back" href="#missions">← Poste de contrôle</a>
     <div class="game-heading">
@@ -211,6 +212,9 @@ function renderRound() {
       <div class="game-status">${roundStatus()}</div>
     </div>
     <progress value="${index}" max="${mission.rounds.length}" aria-label="Manches terminées"></progress>
+    ${lesson ? `<section class="lesson-panel mission-lesson" aria-labelledby="mission-lesson-title">
+      <h2 id="mission-lesson-title" tabindex="-1">${lesson[0]}</h2><p>${lesson[1]}</p>
+    </section>` : ''}
     <div class="playfield photo-field">
       <div class="play">
         <h2 tabindex="-1">${round.prompt}</h2>

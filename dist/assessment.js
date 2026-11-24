@@ -20,7 +20,8 @@ const escapeHtml = value => String(value).replace(/[&<>"']/g, character =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 
 export function createAssessment(root, shuffle, grade = '5e') {
-  const historyKey = grade === '4e' ? 'mission-energie-4e-exam-subjects-v1' : 'mission-energie-exam-subjects-v1';
+  const isFourthGrade = grade === '4e';
+  const historyKey = isFourthGrade ? 'mission-energie-4e-exam-subjects-v1' : 'mission-energie-exam-subjects-v1';
   let attempt;
   let history = [];
   let selection;
@@ -68,11 +69,18 @@ export function createAssessment(root, shuffle, grade = '5e') {
     const sections = getSubject(number, grade);
     const items = sections.flatMap(section => section.items);
     const chain = sections.find(section => section.chain);
-    const written = sections.flatMap(section => section.items).filter(question => question.suggestions);
-    const wordBanks = new Map(written.map(question => [question.suggestions, mixed(question.suggestions)]));
-    const chainBanks = [0, 1, 2].map(column => mixed(chain.items
-      .filter((_, index) => index % 3 === column).map(question => question.answer)));
-    attempt = { number, sections, items, answers: new Map(), wordBanks, chainBanks,
+    const written = items.filter(question => question.suggestions);
+    const suggestions = [...new Set(written.map(question => question.suggestions))];
+    const wordBanks = new Map(suggestions.map(words => [words, mixed(words)]));
+    const chainColumns = [0, 1, 2].map(column => chain.items.filter((_, index) => index % 3 === column));
+    const chainBanks = chainColumns.map(questions => mixed(questions.map(question => question.answer)));
+    const placementBanks = isFourthGrade ? [
+      ...suggestions.map(words => ({
+        questions: written.filter(question => question.suggestions === words), words: wordBanks.get(words)
+      })),
+      ...chainColumns.map((questions, index) => ({ questions, words: chainBanks[index] })),
+    ] : [];
+    attempt = { number, sections, items, answers: new Map(), wordBanks, chainBanks, placementBanks,
       matchingLabels: shuffle(items.filter(question => question.interaction === 'match').map(question => question.answer)),
       options: new Map(items.filter(question => question.options).map(question => [question, shuffle(question.options)])) };
     view = 'questions';
@@ -85,8 +93,16 @@ export function createAssessment(root, shuffle, grade = '5e') {
       <div><span class="eyebrow">Entraînement individuel · ${grade}</span>
       <h1 tabindex="-1">Contrôle blanc</h1>
       <p>Un sujet est tiré au sort parmi ${subjectCount} au démarrage. Il porte sur les sources, les formes et la chaîne d’énergie d’un vélo à assistance électrique.</p>
+      ${isFourthGrade ? `<section class="exam-recap" aria-labelledby="exam-recap-title">
+        <h2 id="exam-recap-title">Les notions à retenir</h2>
+        <dl>
+          <dt>Source d’énergie</dt><dd>Elle indique d’où vient l’énergie. Pour la classer, compare le temps nécessaire à son renouvellement au rythme auquel on l’utilise.</dd>
+          <dt>Forme d’énergie</dt><dd>Elle décrit comment l’énergie se manifeste. Dans un téléphone en charge, le câble transfère de l’énergie électrique que la batterie stocke sous forme chimique.</dd>
+          <dt>Chaîne d’énergie</dt><dd>Elle indique le trajet de l’énergie et la fonction de chaque pièce. Dans un batteur électrique, le moteur convertit l’énergie électrique en rotation et des engrenages transmettent cette rotation aux fouets.</dd>
+        </dl>
+      </section>` : ''}
       <ul class="exam-scale">${sections.map(section => `<li><span>${section.title}</span><strong>${pointsFor(section.items)} pts</strong></li>`).join('')}</ul>
-      <p>Trie les sources, associe les formes et écris tes réponses dans la chaîne d’énergie du vélo. Le bouton de validation apparaît quand toutes les réponses sont renseignées.</p>
+      <p>${isFourthGrade ? 'Trie les sources, associe les formes et place les mots dans la chaîne d’énergie du vélo.' : 'Trie les sources, associe les formes et écris tes réponses dans la chaîne d’énergie du vélo.'} Le bouton de validation apparaît quand toutes les réponses sont renseignées.</p>
       <button class="primary" type="button" data-exam="start">Commencer le contrôle blanc</button></div>
       <img src="photos/electric-bicycle.jpg" alt="Vélo à assistance électrique avec moteur au pédalier">
     </section>`;
@@ -104,14 +120,43 @@ export function createAssessment(root, shuffle, grade = '5e') {
       `<p><strong>${label}</strong><span>${words.join(' · ')}</span></p>`).join('')}</div>`;
   }
 
+  function placementBankIndex(question) {
+    return attempt.placementBanks.findIndex(bank => bank.questions.includes(question));
+  }
+
+  function placementBank(question, label) {
+    const index = placementBankIndex(question);
+    const { words } = attempt.placementBanks[index];
+    return `<div class="exam-word-bank exam-placement-bank">
+      <strong>${label}</strong>
+      <div class="exam-token-bank" role="group" aria-label="${label}">${words.map((word, position) =>
+        `<button type="button" class="exam-token" draggable="true" aria-pressed="false"
+          data-exam-token="word:${index}:${position}">${escapeHtml(word)}</button>`).join('')}</div></div>`;
+  }
+
+  function placementField(question, label) {
+    const id = attempt.items.indexOf(question);
+    const key = `word:${id}`;
+    return `<div class="exam-write exam-placement-field">
+      <span id="exam-answer-label-${id}">${label}</span>
+      <button type="button" class="exam-target" id="exam-answer-${id}" data-exam-target="${key}" data-exam-drop="${key}"
+        aria-labelledby="exam-answer-label-${id} exam-answer-${id}">Placer ici</button>
+      ${question.tail ? `<small>${question.tail}</small>` : ''}</div>`;
+  }
+
+  const placementInstructions = 'Choisis un mot puis clique sur sa case, ou glisse-le dans la case. Clique sur une case remplie pour la vider.';
+
   function writtenChain(section) {
-    const [functions, roles, parts] = attempt.chainBanks;
-    return `<p class="exam-instruction">Complète le schéma de gauche à droite. Écris chaque fonction, ce qu’elle fait et le constituant qui la réalise. On s’intéresse à l’assistance électrique de la roue arrière.</p>
-      ${wordBank([['Fonctions', functions], ['Verbes pour les rôles', roles], ['Constituants', parts]])}
+    const { chainBanks } = attempt;
+    const labels = ['Fonctions', 'Verbes pour les rôles', 'Constituants'];
+    const field = isFourthGrade ? placementField : textField;
+    return `<p class="exam-instruction">Complète le schéma de gauche à droite. ${isFourthGrade ? 'Place' : 'Écris'} chaque fonction, ce qu’elle fait et le constituant qui la réalise. On s’intéresse à l’assistance électrique de la roue arrière.</p>
+      ${isFourthGrade ? labels.map((label, index) => placementBank(section.items[index], label)).join('')
+        : wordBank(labels.map((label, index) => [label, chainBanks[index]]))}
       <div class="exam-chain">${Array.from({ length: 4 }, (_, index) => {
         const [fn, role, part] = section.items.slice(index * 3, index * 3 + 3);
         return `<fieldset class="exam-chain-stage"><legend>Étape ${index + 1}</legend>
-          ${textField(fn, 'Fonction')}${textField(role, 'Rôle')}${textField(part, 'Constituant')}</fieldset>`;
+          ${field(fn, 'Fonction')}${field(role, 'Rôle')}${field(part, 'Constituant')}</fieldset>`;
       }).join('')}</div>
       <p class="exam-chain-barème">Par étape : fonction 0,5 pt · rôle 0,5 pt · constituant 1 pt.</p>`;
   }
@@ -160,12 +205,12 @@ export function createAssessment(root, shuffle, grade = '5e') {
       const id = items.indexOf(question), choices = options.get(question);
       const response = choices ? `<div class="exam-options">${choices.map((choice, i) => `<label class="exam-choice">
         <input type="radio" name="exam-question-${id}" data-item="${id}" value="${i}" ${answers.get(question) === choice ? 'checked' : ''}>
-        <span>${choice}</span></label>`).join('')}</div>` : textField(question, 'Ta réponse');
+        <span>${choice}</span></label>`).join('')}</div>` : (isFourthGrade ? placementField : textField)(question, 'Ta réponse');
       const suggestions = question.suggestions;
       const shared = suggestions ? section.items.filter(item => item.suggestions === suggestions) : [];
       const label = shared.length > 1 ? `Mots proposés pour les questions ${shared.map(item => items.indexOf(item) + 1).join(' et ')}` : 'Mots proposés';
       const bank = suggestions && !displayedBanks.has(suggestions)
-        ? wordBank([[label, wordBanks.get(suggestions)]]) : '';
+        ? (isFourthGrade ? placementBank(question, label) : wordBank([[label, wordBanks.get(suggestions)]])) : '';
       if (suggestions) displayedBanks.add(suggestions);
       return `<fieldset class="exam-question"><legend><span>${id + 1}.</span> ${question.prompt}</legend>${bank}${response}</fieldset>`;
     }).join('')}</div>`;
@@ -182,6 +227,7 @@ export function createAssessment(root, shuffle, grade = '5e') {
         <output>${answers.size} / ${items.length} réponses</output>
         <progress aria-label="Réponses données" max="${items.length}" value="${answers.size}"></progress>
       </div>
+      ${isFourthGrade ? `<p class="exam-instruction">${placementInstructions}</p>` : ''}
       ${sections.map((section, sectionIndex) => `<section class="exam-sheet" aria-labelledby="exam-part-${sectionIndex}">
         <div class="exam-part-heading">
           <div><span class="eyebrow">Partie ${sectionIndex + 1} · ${pointsFor(section.items)} points</span>
@@ -240,19 +286,69 @@ export function createAssessment(root, shuffle, grade = '5e') {
     root.querySelector('.exam-submit-hint').hidden = complete;
   }
 
+  function updateWordPlacement() {
+    const selectedBank = selection?.startsWith('word:') ? Number(selection.split(':')[1]) : -1;
+    for (const token of root.querySelectorAll('[data-exam-token^="word:"]')) {
+      const [, bankIndex, wordIndex] = token.dataset.examToken.split(':');
+      const { questions, words } = attempt.placementBanks[Number(bankIndex)];
+      token.setAttribute('aria-pressed', String(selection === token.dataset.examToken));
+      token.classList.toggle('used', questions.some(question => attempt.answers.get(question) === words[Number(wordIndex)]));
+    }
+    for (const target of root.querySelectorAll('[data-exam-target^="word:"]')) {
+      const id = Number(target.dataset.examTarget.split(':')[1]);
+      const question = attempt.items[id];
+      const answer = attempt.answers.get(question);
+      target.textContent = answer ?? 'Placer ici';
+      target.classList.toggle('filled', Boolean(answer));
+      target.classList.toggle('available', selectedBank === placementBankIndex(question));
+    }
+  }
+
   function redrawGroup(mode, attribute, key) {
-    const group = root.querySelector(`[data-exam-group="${mode}"]`);
-    group.outerHTML = mode === 'sort' ? sortMarkup() : matchMarkup();
+    if (mode === 'word') {
+      updateWordPlacement();
+    } else {
+      const group = root.querySelector(`[data-exam-group="${mode}"]`);
+      group.outerHTML = mode === 'sort' ? sortMarkup() : matchMarkup();
+    }
     root.querySelector(`[data-exam-${attribute}="${key}"]`)?.focus({ preventScroll: true });
     updateCompletion();
   }
 
+  function clearSelection(mode) {
+    const previous = selection?.split(':')[0];
+    selection = null;
+    if (previous && previous !== mode) redrawGroup(previous, 'token', '');
+  }
+
+  function placeWord(token, target) {
+    const question = attempt.items[Number(target.split(':')[1])];
+    const bankIndex = placementBankIndex(question);
+    if (bankIndex === -1) return;
+    if (token) {
+      const [mode, index, wordIndex] = token.split(':');
+      if (mode !== 'word' || Number(index) !== bankIndex) return;
+      const { questions, words } = attempt.placementBanks[bankIndex];
+      const word = words[Number(wordIndex)];
+      if (!word) return;
+      const previous = questions.find(item => attempt.answers.get(item) === word);
+      if (previous) attempt.answers.delete(previous);
+      attempt.answers.set(question, word);
+    } else {
+      attempt.answers.delete(question);
+    }
+    clearSelection('word');
+    redrawGroup('word', 'target', target);
+  }
+
   function place(token, target) {
     const [mode, value] = target.split(':');
-    if (mode === 'sort' && token?.startsWith('sort:')) {
+    if (mode === 'word') {
+      placeWord(token, target);
+    } else if (mode === 'sort' && token?.startsWith('sort:')) {
       const question = attempt.items[Number(token.split(':')[1])];
       attempt.answers.set(question, value);
-      selection = null;
+      clearSelection(mode);
       redrawGroup(mode, 'token', token);
     } else if (mode === 'match') {
       const question = attempt.items[Number(value)];
@@ -264,7 +360,7 @@ export function createAssessment(root, shuffle, grade = '5e') {
       } else if (!token) {
         attempt.answers.delete(question);
       } else return;
-      selection = null;
+      clearSelection(mode);
       redrawGroup(mode, 'target', target);
     }
   }
