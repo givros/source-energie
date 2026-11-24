@@ -216,16 +216,56 @@ const fourthGradeRounds = {
 };
 
 const fourthGradeLessons = {
-  'sources-photo': ['Repérer la source', 'La source est ce dont le système tire son énergie. Un panneau photovoltaïque utilise le rayonnement du Soleil et fournit de l’électricité au circuit.'],
-  'sources-tri': ['Classer les ressources', 'On compare la vitesse à laquelle une ressource se reconstitue et celle à laquelle on l’utilise. Le charbon se forme sur des millions d’années. À l’échelle humaine, son stock diminue quand on l’exploite.'],
-  'sources-diagnostic': ['Distinguer source et forme', 'La source indique d’où vient l’énergie. La forme indique comment elle est stockée ou transférée. Dans une chaufferie, le gaz naturel est la source et l’énergie thermique réchauffe l’eau.'],
-  formes: ['Reconnaître une forme d’énergie', 'Observe ce qui se passe ou ce qui est stocké. Un ascenseur à l’arrêt en haut d’un bâtiment possède de l’énergie potentielle de pesanteur. Quand il se déplace, il possède aussi de l’énergie cinétique.'],
-  'photo-match': ['Décrire une transformation', 'Pour décrire une conversion, nomme la forme d’énergie reçue puis la forme utile obtenue. Un panneau photovoltaïque convertit une partie de l’énergie du rayonnement solaire en énergie électrique.'],
-  conversions: ['Repérer l’énergie utile', 'La forme d’énergie utile dépend de l’action recherchée. Dans une lampe, la lumière sert à éclairer. Une partie de l’énergie électrique est aussi convertie en énergie thermique.'],
-  'chaine-ordre': ['Suivre le trajet de l’énergie', 'Pars de la réserve d’énergie et suis les pièces jusqu’à l’action finale. Dans une visseuse sans fil, l’énergie passe de la batterie au moteur via la gâchette et son circuit. Les engrenages transmettent ensuite la rotation à l’embout.'],
-  'chaine-pieces': ['Associer une pièce à son rôle', 'Une fonction décrit ce que fait une pièce. Dans un portail automatique, un relais pilote l’alimentation du moteur. Un système à engrenages transmet ensuite le mouvement au portail.'],
-  'chaine-panne': ['Localiser une panne', 'Commence par repérer ce qui fonctionne encore. Si le moteur d’un portail tourne mais que le portail reste immobile, on peut vérifier les pièces qui transmettent le mouvement.'],
-  'defi-final': ['Raisonner de la source à l’action', 'Pour analyser un objet, distingue sa source d’énergie, les formes d’énergie mises en jeu et le rôle des pièces. Dans une lampe solaire, le panneau convertit le rayonnement solaire en énergie électrique et la batterie stocke de l’énergie sous forme chimique.'],
+  'sources-photo': [
+    'Repérer la source',
+    'La source est la ressource dont le système tire son énergie. Pour la trouver, remonte à ce qui fournit l’énergie au départ.',
+    'Dans une installation photovoltaïque, la source est le Soleil. Les panneaux utilisent son rayonnement pour fournir de l’électricité au circuit.',
+  ],
+  'sources-tri': [
+    'Sources renouvelables et non renouvelables',
+    'Une source renouvelable se reconstitue à l’échelle humaine. Le stock d’une source non renouvelable se reconstitue beaucoup plus lentement qu’on ne le consomme.',
+    'Le charbon se forme sur des millions d’années. Quand on en prélève, son stock diminue à l’échelle humaine.',
+  ],
+  'sources-diagnostic': [
+    'Distinguer source et forme',
+    'La source indique d’où vient l’énergie. La forme indique comment elle se manifeste, se stocke ou se transfère.',
+    'Dans une chaufferie au gaz, le gaz naturel est la source. La combustion fournit de l’énergie thermique pour chauffer l’eau.',
+  ],
+  formes: [
+    'Reconnaître une forme d’énergie',
+    'Un objet en mouvement possède de l’énergie cinétique. Un objet placé en hauteur possède de l’énergie potentielle de pesanteur, même à l’arrêt. Un même objet peut posséder plusieurs formes d’énergie.',
+    'Une cabine d’ascenseur à l’arrêt en hauteur possède de l’énergie potentielle de pesanteur. Lorsqu’elle descend, elle possède aussi de l’énergie cinétique.',
+  ],
+  'photo-match': [
+    'Décrire une transformation',
+    'Une conversion change la forme de l’énergie. Pour la décrire, indique la forme reçue à l’entrée puis celle obtenue à la sortie.',
+    'Une dynamo de vélo reçoit l’énergie mécanique de la roue en rotation et fournit de l’énergie électrique à l’éclairage.',
+  ],
+  conversions: [
+    'Repérer l’énergie utile',
+    'Un appareil peut produire plusieurs effets. L’énergie utile est celle qui contribue à l’action recherchée.',
+    'Une lampe sert à éclairer. La lumière est donc l’effet utile. Une partie de l’énergie électrique reçue est également convertie en énergie thermique.',
+  ],
+  'chaine-ordre': [
+    'Suivre le trajet de l’énergie',
+    'Alimenter consiste à fournir l’énergie. Distribuer consiste à en contrôler le passage. Convertir en change la forme. Transmettre conduit l’énergie ou le mouvement jusqu’à l’élément qui agit.',
+    'Dans une visseuse, la batterie fournit l’énergie électrique. La gâchette et son circuit la distribuent au moteur. Il la convertit en rotation, puis les engrenages transmettent cette rotation à l’embout.',
+  ],
+  'chaine-pieces': [
+    'Associer une pièce à sa fonction',
+    'Un constituant est une pièce du système. Sa fonction décrit son rôle dans le trajet de l’énergie. Deux objets peuvent assurer la même fonction avec des pièces différentes.',
+    'Un axe peut transmettre une rotation entre deux pièces placées sur la même ligne. Dans un autre système, une courroie peut transmettre une rotation entre deux pièces éloignées.',
+  ],
+  'chaine-panne': [
+    'Localiser une panne',
+    'Observe jusqu’à quelle étape le système fonctionne. Le premier effet attendu qui manque donne une piste pour trouver la fonction en cause.',
+    'Si le moteur d’un portail tourne alors que le portail reste immobile, la rotation est bien produite. On vérifie ensuite les pièces qui transmettent le mouvement.',
+  ],
+  'defi-final': [
+    'Raisonner de la source à l’action',
+    'Pour décrire le fonctionnement d’un objet, repère d’où vient son énergie, identifie les changements de forme et relie chaque fonction à la pièce qui la réalise.',
+    'Une lampe solaire tire son énergie du Soleil. Son panneau fournit de l’énergie électrique. Sa batterie la stocke sous forme chimique pour alimenter l’éclairage après la tombée de la nuit.',
+  ],
 };
 
 export const fourthGradeMissions = missions.map(mission => ({

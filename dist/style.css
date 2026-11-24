@@ -408,8 +408,9 @@ body:has(.game), body:has(.credits) { min-height: 100vh; }
 .lesson-panel h2 { margin: 0; }
 .lesson-panel h3 { margin: 10px 0; }
 .lesson-panel p { line-height: 1.5; margin: 10px 0; }
-.mission-lesson { margin-bottom: 14px; }
-.mission-lesson h2 { font-size: 1.2rem; }
+.mission-prep { max-width: 920px; }
+.mission-lesson { margin: 20px 0 16px; }
+.mission-lesson h2 { font-size: 1.35rem; }
 .mission-lesson p { margin-bottom: 0; max-width: 80ch; }
 .lesson-scene { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 18px; margin: 13px 0; }
 .lesson-scene figure { margin: 0; background: #101a1e; border-radius: 4px; }

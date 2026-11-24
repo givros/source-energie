@@ -76,7 +76,7 @@ function missionBrief(mission) {
             <h2>${mission.title}</h2>
             <p>${mission.summary}</p>
             <div class="brief-controls">
-              <a class="primary" href="#jeu/${mission.id}">Jouer</a>
+              <a class="primary" href="#jeu/${mission.id}">${mission.lesson ? 'Ouvrir la mission' : 'Jouer'}</a>
               <span>${mode} · ${mission.rounds.length} manches</span>
             </div>
           </div>`;
@@ -184,7 +184,27 @@ function showCredits() {
 
 function start(mission) {
   run = { mission, index: 0, points: 0, answered: false };
+  if (mission.lesson) {
+    renderMissionLesson(mission);
+    return;
+  }
   prepareRound();
+}
+
+function renderMissionLesson({ title, zone, lesson: [heading, definition, example] }) {
+  app.innerHTML = `<section class="game mission-prep">
+    <a class="back" href="#missions">← Poste de contrôle</a>
+    <div class="eyebrow">Cours · ${zone}</div>
+    <h1 tabindex="-1">${title}</h1>
+    <section class="lesson-panel mission-lesson" aria-labelledby="mission-lesson-title">
+      <h2 id="mission-lesson-title">${heading}</h2>
+      <p>${definition}</p>
+      <p class="lesson-takeaway"><strong>Exemple.</strong> ${example}</p>
+    </section>
+    <div class="actions"><button type="button" class="primary" data-action="begin">Commencer la mission</button></div>
+  </section>`;
+  window.scrollTo(0, 0);
+  app.querySelector('h1').focus({ preventScroll: true });
 }
 
 function prepareRound() {
@@ -204,7 +224,6 @@ function roundStatus() {
 
 function renderRound() {
   const { mission, round, index } = run;
-  const lesson = index === 0 && mission.lesson;
   app.innerHTML = `<section class="game">
     <a class="back" href="#missions">← Poste de contrôle</a>
     <div class="game-heading">
@@ -212,9 +231,6 @@ function renderRound() {
       <div class="game-status">${roundStatus()}</div>
     </div>
     <progress value="${index}" max="${mission.rounds.length}" aria-label="Manches terminées"></progress>
-    ${lesson ? `<section class="lesson-panel mission-lesson" aria-labelledby="mission-lesson-title">
-      <h2 id="mission-lesson-title" tabindex="-1">${lesson[0]}</h2><p>${lesson[1]}</p>
-    </section>` : ''}
     <div class="playfield photo-field">
       <div class="play">
         <h2 tabindex="-1">${round.prompt}</h2>
@@ -375,6 +391,8 @@ app.addEventListener('click', event => {
     redrawBoard('[data-card]');
   } else if (button.dataset.action === 'check') {
     finishRound(run.options.every((card, index) => card.target === run.placements[index]));
+  } else if (button.dataset.action === 'begin') {
+    prepareRound();
   } else if (button.dataset.action === 'next') {
     advance();
   } else if (button.dataset.action === 'retry') {
