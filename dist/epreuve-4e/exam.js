@@ -40,6 +40,7 @@ app.innerHTML = `<section id="fourth-exam-welcome" class="game exam">
 <section id="fourth-exam-received" class="game exam" hidden>
   <h1 tabindex="-1">Copie remise</h1>
   <p>Ta copie et ta note ont été enregistrées.</p>
+  <button type="button" id="fourth-exam-new-student" class="primary">Nouvel élève</button>
 </section>`;
 
 let id;
@@ -183,6 +184,20 @@ $('#fourth-exam-identity').addEventListener('submit', async event => {
   } finally {
     button.disabled = false;
   }
+});
+
+$('#fourth-exam-new-student').addEventListener('click', () => {
+  try { sessionStorage.removeItem(sessionKey); } catch {}
+  id = undefined;
+  draft = undefined;
+  expired = false;
+  $('#fourth-exam-questions').replaceChildren();
+  $('#fourth-exam-identity').reset();
+  $('#fourth-exam-error').textContent = '';
+  $('#fourth-exam-received').hidden = true;
+  $('#fourth-exam-welcome').hidden = false;
+  window.scrollTo(0, 0);
+  $('#fourth-exam-identity input').focus({ preventScroll: true });
 });
 
 let saved;
