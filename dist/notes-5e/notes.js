@@ -3,8 +3,10 @@ const collator = new Intl.Collator('fr-FR',{sensitivity:'base',numeric:true});
 const formatGrade = new Intl.NumberFormat('fr-FR',{maximumFractionDigits:2});
 const $ = id => document.getElementById(id);
 const sessionKey = 'mission-energie-teacher-session';
+const gradeKey = 'mission-energie-teacher-grade';
 let session = '';
 try { session = localStorage.getItem(sessionKey) ?? ''; } catch {}
+try { $('grade-filter').value = sessionStorage.getItem(gradeKey) === '4e' ? '4e' : '5e'; } catch {}
 let classes = new Map();
 let loadId = 0;
 
@@ -62,9 +64,17 @@ function showRefresh() {
   $('status').textContent='Clique sur Actualiser pour charger les notes.';
 }
 
+function clearResults() {
+  classes.clear();
+  $('class-list').replaceChildren();
+  $('class-filter').replaceChildren(new Option('Toutes les classes',''));
+  $('class-filter').disabled=true;
+}
+
 async function load(code) {
   const signingIn=code !== undefined;
   const current=++loadId;
+  const grade=$('grade-filter').value === '4e' ? '4e' : undefined;
   $('status').textContent=signingIn ? 'Vérification du code…' : 'Chargement des notes…';
   $('refresh').disabled=true;
   $('access').querySelector('button').disabled=true;
@@ -73,7 +83,7 @@ async function load(code) {
     let offset=0;
     do {
       const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(signingIn ? {code,authOnly:true} : {session,offset}),signal:AbortSignal.timeout(10000)});
+        body:JSON.stringify(signingIn ? {code,authOnly:true} : {session,offset,grade}),signal:AbortSignal.timeout(10000)});
       const data=await response.json();
       if (current !== loadId) return;
       if (response.status === 401 && session) {
@@ -118,16 +128,20 @@ $('access').addEventListener('submit',event=>{
   event.preventDefault();
   void load($('code').value.trim());
 });
+$('grade-filter').addEventListener('change',event=>{
+  loadId++;
+  try { sessionStorage.setItem(gradeKey,event.target.value); } catch {}
+  clearResults();
+  $('refresh').disabled=false;
+  showRefresh();
+});
 $('class-filter').addEventListener('change',render);
 $('refresh').addEventListener('click',()=>void load());
 function closeAccess() {
   loadId++;
   session='';
   try { localStorage.removeItem(sessionKey); } catch {}
-  classes.clear();
-  $('class-list').replaceChildren();
-  $('class-filter').replaceChildren(new Option('Toutes les classes',''));
-  $('class-filter').disabled=true;
+  clearResults();
   $('status').textContent='';
   $('results').hidden=true;
   $('access').hidden=false;

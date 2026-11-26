@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Notes de l’épreuve · 5e</title>
+  <title>Notes des épreuves · 5e et 4e</title>
   <link rel="stylesheet" href="notes.css">
   <script type="module" src="notes.js"></script>
 </head>
 <body>
   <main>
     <a href="../">Mission Énergie</a>
-    <h1>Notes de l’épreuve de 5e</h1>
+    <h1>Notes des épreuves</h1>
     <form id="access">
       <label for="code">Code professeur</label>
       <input id="code" type="password" required autocomplete="off" maxlength="43">
@@ -20,6 +20,11 @@
     <p id="status" role="status"></p>
     <section id="results" hidden>
       <div class="toolbar">
+        <label for="grade-filter">Niveau</label>
+        <select id="grade-filter">
+          <option value="5e">5e</option>
+          <option value="4e">4e</option>
+        </select>
         <label for="class-filter">Classe</label>
         <select id="class-filter" disabled><option value="">Toutes les classes</option></select>
         <button type="button" id="refresh">Actualiser</button>

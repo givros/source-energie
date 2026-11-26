@@ -442,3 +442,15 @@ body:has(.game), body:has(.credits) { min-height: 100vh; }
   grid-template-rows: minmax(54px,auto) minmax(98px,auto) minmax(68px,auto);
 }
 .exam-chain .exam-placement-field .exam-target { width: 100%; }
+
+#fourth-exam-identity { display: grid; gap: 12px; max-width: 330px; }
+#fourth-exam-identity label, .fourth-class-choice { display: grid; gap: 4px; }
+#fourth-exam-identity input, #fourth-exam-identity select {
+  padding: 8px; font: inherit; color: #121c20; background: #fff;
+  border: 1px solid #89a1a4; border-radius: 4px;
+}
+#fourth-exam-identity button { justify-self: start; margin-top: 4px; }
+#fourth-exam-error:empty, .official-fourth-status:empty { display: none; }
+.official-fourth-time { margin-left: 8px; font-size: 1.05rem; font-weight: bold; font-variant-numeric: tabular-nums; }
+.official-fourth-confirm { display: flex; align-items: center; gap: 7px; margin: 0 0 10px; }
+.official-fourth-status { line-height: 1.45; }

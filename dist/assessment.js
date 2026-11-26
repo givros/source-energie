@@ -2,7 +2,7 @@ import { getSubject, subjectCount } from './assessment-bank.js';
 
 const subjectNumbers = Array.from({ length: subjectCount }, (_, index) => index + 1);
 
-const weightOf = question => question.weight ?? 1;
+const weightOf = question => question.weight ?? question.points ?? 1;
 const pointsFor = questions => questions.reduce((sum, question) => sum + weightOf(question), 0);
 const normalize = value => (value ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
   .replace(/[^a-z0-9 ]/g, ' ').trim().split(/\s+/)
@@ -19,7 +19,7 @@ const formatPoints = number => new Intl.NumberFormat('fr-FR').format(number);
 const escapeHtml = value => String(value).replace(/[&<>"']/g, character =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 
-export function createAssessment(root, shuffle, grade = '5e') {
+export function createAssessment(root, shuffle, grade = '5e', official) {
   const isFourthGrade = grade === '4e';
   const historyKey = isFourthGrade ? 'mission-energie-4e-exam-subjects-v1' : 'mission-energie-exam-subjects-v1';
   let attempt;
@@ -64,27 +64,44 @@ export function createAssessment(root, shuffle, grade = '5e') {
   }
 
   function start() {
-    selection = null;
     const number = drawSubject();
-    const sections = getSubject(number, grade);
+    openQuestions(getSubject(number, grade), number);
+  }
+
+  function openQuestions(sections, number, savedAnswers = {}) {
+    selection = null;
+    if (official) {
+      const pools = new Map();
+      for (const question of sections.flatMap(section => section.items)) {
+        if (!question.suggestions) continue;
+        const key = JSON.stringify([...question.suggestions].sort());
+        if (!pools.has(key)) pools.set(key, question.suggestions);
+        question.suggestions = pools.get(key);
+      }
+    }
     const items = sections.flatMap(section => section.items);
     const chain = sections.find(section => section.chain);
     const written = items.filter(question => question.suggestions);
     const suggestions = [...new Set(written.map(question => question.suggestions))];
     const wordBanks = new Map(suggestions.map(words => [words, mixed(words)]));
     const chainColumns = [0, 1, 2].map(column => chain.items.filter((_, index) => index % 3 === column));
-    const chainBanks = chainColumns.map(questions => mixed(questions.map(question => question.answer)));
+    const chainBanks = official ? chain.banks.map(([,words]) => words)
+      : chainColumns.map(questions => mixed(questions.map(question => question.answer)));
     const placementBanks = isFourthGrade ? [
       ...suggestions.map(words => ({
         questions: written.filter(question => question.suggestions === words), words: wordBanks.get(words)
       })),
       ...chainColumns.map((questions, index) => ({ questions, words: chainBanks[index] })),
     ] : [];
-    attempt = { number, sections, items, answers: new Map(), wordBanks, chainBanks, placementBanks,
-      matchingLabels: shuffle(items.filter(question => question.interaction === 'match').map(question => question.answer)),
+    const answers = new Map(items.flatMap((question, index) =>
+      savedAnswers[index] ? [[question,savedAnswers[index]]] : []));
+    attempt = { number, sections, items, answers, wordBanks, chainBanks, placementBanks,
+      matchingLabels: shuffle(official ? sections.flatMap(section => section.labels ?? [])
+        : items.filter(question => question.interaction === 'match').map(question => question.answer)),
       options: new Map(items.filter(question => question.options).map(question => [question, shuffle(question.options)])) };
     view = 'questions';
     render();
+    if (official) updateWordPlacement();
   }
 
   function introMarkup() {
@@ -221,11 +238,12 @@ export function createAssessment(root, shuffle, grade = '5e') {
     return `<div class="exam-active">
       <div class="exam-heading">
         <div><span class="eyebrow">Sujet ${subjectLabel(number)} · ${maxScore} points</span>
-        <h1 tabindex="-1">Contrôle blanc</h1></div>
+        <h1 tabindex="-1">${official ? 'Épreuve de technologie · 4e' : 'Contrôle blanc'}</h1></div>
       </div>
       <div class="exam-count">
         <output>${answers.size} / ${items.length} réponses</output>
         <progress aria-label="Réponses données" max="${items.length}" value="${answers.size}"></progress>
+        ${official ? '<span class="official-fourth-time" role="timer" aria-label="Temps restant">20:00</span>' : ''}
       </div>
       ${isFourthGrade ? `<p class="exam-instruction">${placementInstructions}</p>` : ''}
       ${sections.map((section, sectionIndex) => `<section class="exam-sheet" aria-labelledby="exam-part-${sectionIndex}">
@@ -238,7 +256,10 @@ export function createAssessment(root, shuffle, grade = '5e') {
       </section>`).join('')}
       <div class="exam-actions">
         <p class="exam-submit-hint" ${answers.size === items.length ? 'hidden' : ''}>Complète toutes les réponses pour pouvoir valider.</p>
-        <button class="primary" type="button" data-exam="submit" ${answers.size !== items.length ? 'hidden' : ''}>Valider et voir la note</button>
+        ${official ? `<label class="official-fourth-confirm" ${answers.size !== items.length ? 'hidden' : ''}>
+          <input type="checkbox" id="confirm-submit"> Je confirme que je veux remettre ma copie.</label>
+          <p class="official-fourth-status" role="status"></p>` : ''}
+        <button class="primary" type="button" data-exam="submit" ${official ? 'disabled' : ''} ${answers.size !== items.length ? 'hidden' : ''}>${official ? 'Soumettre ma copie' : 'Valider et voir la note'}</button>
       </div>
     </div>`;
   }
@@ -270,7 +291,7 @@ export function createAssessment(root, shuffle, grade = '5e') {
   function render() {
     document.querySelector('a[href="#memo"]').hidden = view === 'questions';
     root.innerHTML = `<section class="game exam">
-      <a class="back" href="#missions">← Poste de contrôle</a>
+      ${official ? '' : '<a class="back" href="#missions">← Poste de contrôle</a>'}
       ${view === 'intro' ? introMarkup() : view === 'questions' ? questionMarkup() : resultMarkup()}
     </section>`;
     focusHeading();
@@ -284,6 +305,20 @@ export function createAssessment(root, shuffle, grade = '5e') {
     root.querySelector('.exam-count progress').value = answered;
     root.querySelector('[data-exam="submit"]').hidden = !complete;
     root.querySelector('.exam-submit-hint').hidden = complete;
+    if (official) {
+      root.querySelector('.official-fourth-confirm').hidden = !complete;
+      updateOfficialButton();
+      official.saveDraft(answerValues());
+    }
+  }
+
+  function answerValues() {
+    return Object.fromEntries([...attempt.answers].map(([question, answer]) => [attempt.items.indexOf(question),answer]));
+  }
+
+  function updateOfficialButton() {
+    const confirm = root.querySelector('#confirm-submit');
+    root.querySelector('[data-exam="submit"]').disabled = confirm.disabled || !confirm.checked;
   }
 
   function updateWordPlacement() {
@@ -366,6 +401,10 @@ export function createAssessment(root, shuffle, grade = '5e') {
   }
 
   root.addEventListener('input', event => {
+    if (official && event.target.id === 'confirm-submit') {
+      updateOfficialButton();
+      return;
+    }
     if (view !== 'questions' || !event.target.matches('input[data-item]')) return;
     const field = event.target;
     const question = attempt.items[Number(field.dataset.item)];
@@ -401,7 +440,7 @@ export function createAssessment(root, shuffle, grade = '5e') {
 
   root.addEventListener('click', event => {
     const control = event.target.closest('button');
-    if (!control) return;
+    if (!control || control.disabled) return;
     const { exam: action, examToken, examTarget } = control.dataset;
     if (view === 'questions' && examToken) {
       const [mode] = examToken.split(':');
@@ -417,10 +456,14 @@ export function createAssessment(root, shuffle, grade = '5e') {
     }
     if (action === 'start') start();
     else if (action === 'submit' && view === 'questions' && attempt.answers.size === attempt.items.length) {
+      if (official) {
+        if (root.querySelector('#confirm-submit').checked) official.submit(answerValues());
+        return;
+      }
       view = 'result';
       render();
     }
   });
 
-  return { render };
+  return { render, openQuestions, updateOfficialButton };
 }
